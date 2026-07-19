@@ -37,9 +37,8 @@ type ServerPool struct {
 	current  int        // current url index
 }
 
-
 func (sp *ServerPool) GetNextBackend() *Backend {
-	sp.mu.Lock() // -> why not here read lock ? -> what if 100 req hit at the same milisecond 
+	sp.mu.Lock() // -> why not here read lock ? -> what if 100 req hit at the same milisecond
 	defer sp.mu.Unlock()
 	for i := 0; i < len(sp.backends); i++ {
 		idx := (sp.current + i) % len(sp.backends)
@@ -51,7 +50,7 @@ func (sp *ServerPool) GetNextBackend() *Backend {
 	return nil
 }
 
-// Constructor funtion
+// Constructor function
 func NewBackend(rawURL string) (*Backend, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
