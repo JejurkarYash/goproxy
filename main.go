@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	// "time"
+	"time"
 )
 
 // entry point
@@ -57,7 +57,7 @@ func main() {
 	go StartMockBackend(":8083")
 
 	// starting a new goroutine for backend health check
-	// go BackendHealthCheck(NewServerPool, time.Duration(Config.BackendHealthCheckInterval)*time.Second)
+	go BackendHealthCheck(NewServerPool, time.Duration(Config.BackendHealthCheckInterval)*time.Second)
 
 	// starting Proxy server
 	mux := http.NewServeMux()
