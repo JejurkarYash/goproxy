@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
+	// "time"
 )
 
 // entry point
@@ -29,13 +29,35 @@ func main() {
 		backends: backends,
 	}
 
+	// attaching the error handler
+	for _, b := range NewServerPool.backends {
+
+		b.ReverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+
+			// logging to terminal
+			log.Printf("[%s] connection failed: %v", b.URL, err)
+			//  marking it as unhealthy
+			b.SetAlive(false)
+
+			nextBackend := NewServerPool.GetNextBackend()
+			if nextBackend != nil {
+				log.Printf("[%s] connection retrying...\n", nextBackend.URL)
+				nextBackend.ReverseProxy.ServeHTTP(w, r)
+
+				return
+			}
+
+			http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
+		}
+	}
+
 	// starting mock backend
 	go StartMockBackend(":8081")
 	go StartMockBackend(":8082")
 	go StartMockBackend(":8083")
 
 	// starting a new goroutine for backend health check
-	go BackendHealthCheck(NewServerPool, time.Duration(Config.BackendHealthCheckInterval)*time.Second)
+	// go BackendHealthCheck(NewServerPool, time.Duration(Config.BackendHealthCheckInterval)*time.Second)
 
 	// starting Proxy server
 	mux := http.NewServeMux()
@@ -44,6 +66,7 @@ func main() {
 		// creating and forwarding of request is handle by reverseproxy
 		backend := NewServerPool.GetNextBackend()
 		backend.ReverseProxy.ServeHTTP(w, r)
+
 	})
 	// creating server
 	proxyServer := &http.Server{
